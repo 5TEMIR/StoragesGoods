@@ -6,7 +6,19 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
 from project.core.config import settings
-from project.api.routes import router
+from project.api.storage_routes import storage_router
+from project.api.goodsgroup_routes import goodsgroup_router
+from project.api.producer_routes import producer_router
+from project.api.storagemethod_routes import storage_method_router
+from project.api.supplier_routes import supplier_router
+from project.api.client_routes import client_router
+from project.api.good_routes import good_router
+from project.api.storageplace_routes import storage_place_router
+from project.api.receipt_routes import receipt_router
+from project.api.expense_routes import expense_router
+from project.api.goodstransfer_routes import goods_transfer_router
+from project.api.goodsreceipt_routes import goods_receipt_router
+from project.api.goodsexpense_routes import goods_expense_router
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +42,19 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    app.include_router(router, prefix="/api", tags=["User APIs"])
+    app.include_router(storage_router, tags=["Storage"])
+    app.include_router(goodsgroup_router, tags=["GoodsGroup"])
+    app.include_router(producer_router, tags=["Producer"])
+    app.include_router(storage_method_router, tags=["StorageMethod"])
+    app.include_router(supplier_router, tags=["Supplier"])
+    app.include_router(client_router, tags=["Client"])
+    app.include_router(good_router, tags=["Good"])
+    app.include_router(storage_place_router, tags=["StoragePlace"])
+    app.include_router(receipt_router, tags=["Receipt"])
+    app.include_router(expense_router, tags=["Expense"])
+    app.include_router(goods_transfer_router, tags=["GoodsTransfer"])
+    app.include_router(goods_receipt_router, tags=["GoodsReceipt"])
+    app.include_router(goods_expense_router, tags=["GoodsExpense"])
 
     return app
 
