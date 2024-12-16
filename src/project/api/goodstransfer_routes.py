@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 
-from project.api.depends import database, goods_transfer_repo
+from project.schemas.user import UserSchema
+
+from project.api.depends import database, goods_transfer_repo, get_current_user, check_for_admin_access
 from project.schemas.goodstransfer import *
 from project.core.exceptions import *
 
@@ -34,7 +36,9 @@ async def get_goods_transfer_by_id(transfer_id: int) -> GoodsTransferSchema:
 
 @goods_transfer_router.post("/add_goods_transfer", response_model=GoodsTransferSchema,
                             status_code=status.HTTP_201_CREATED)
-async def add_goods_transfer(transfer_dto: GoodsTransferCreateUpdateSchema) -> GoodsTransferSchema:
+async def add_goods_transfer(transfer_dto: GoodsTransferCreateUpdateSchema,
+                             current_user: UserSchema = Depends(get_current_user), ) -> GoodsTransferSchema:
+    check_for_admin_access(user=current_user)
     try:
         async with database.session() as session:
             new_transfer = await goods_transfer_repo.create_goods_transfer(session=session, transfer=transfer_dto)
@@ -48,7 +52,9 @@ async def add_goods_transfer(transfer_dto: GoodsTransferCreateUpdateSchema) -> G
     response_model=GoodsTransferSchema,
     status_code=status.HTTP_200_OK,
 )
-async def update_goods_transfer(transfer_id: int, transfer_dto: GoodsTransferCreateUpdateSchema) -> GoodsTransferSchema:
+async def update_goods_transfer(transfer_id: int, transfer_dto: GoodsTransferCreateUpdateSchema,
+                                current_user: UserSchema = Depends(get_current_user), ) -> GoodsTransferSchema:
+    check_for_admin_access(user=current_user)
     try:
         async with database.session() as session:
             updated_transfer = await goods_transfer_repo.update_goods_transfer(
@@ -62,7 +68,8 @@ async def update_goods_transfer(transfer_id: int, transfer_dto: GoodsTransferCre
 
 
 @goods_transfer_router.delete("/delete_goods_transfer/{transfer_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_goods_transfer(transfer_id: int) -> None:
+async def delete_goods_transfer(transfer_id: int, current_user: UserSchema = Depends(get_current_user), ) -> None:
+    check_for_admin_access(user=current_user)
     try:
         async with database.session() as session:
             goodstransfer = await goods_transfer_repo.delete_goods_transfer(session=session, transfer_id=transfer_id)

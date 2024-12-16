@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, false
 from project.infrastructure.postgres.database import Base
 
 
@@ -125,3 +125,13 @@ class GoodsTransfer(Base):
         ForeignKey("storages.id", ondelete="CASCADE", onupdate="CASCADE"))
     good_id: Mapped[int] = mapped_column(
         ForeignKey("goods.id", ondelete="CASCADE", onupdate="CASCADE"))
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    login: Mapped[str] = mapped_column(nullable=False, unique=True)
+    email: Mapped[str] = mapped_column(nullable=False, unique=True)
+    password: Mapped[str] = mapped_column(nullable=False)
+    is_admin: Mapped[bool] = mapped_column(default=False, server_default=false())

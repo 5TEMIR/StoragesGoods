@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 
-from project.api.depends import database, storage_place_repo
+from project.schemas.user import UserSchema
+
+from project.api.depends import database, storage_place_repo, get_current_user, check_for_admin_access
 from project.schemas.storageplace import *
 from project.core.exceptions import *
 
@@ -33,7 +35,9 @@ async def get_storage_place_by_id(place_id: int) -> StoragePlaceSchema:
 
 
 @storage_place_router.post("/add_storage_place", response_model=StoragePlaceSchema, status_code=status.HTTP_201_CREATED)
-async def add_storage_place(storage_place_dto: StoragePlaceCreateUpdateSchema) -> StoragePlaceSchema:
+async def add_storage_place(storage_place_dto: StoragePlaceCreateUpdateSchema,
+                            current_user: UserSchema = Depends(get_current_user), ) -> StoragePlaceSchema:
+    check_for_admin_access(user=current_user)
     try:
         async with database.session() as session:
             new_place = await storage_place_repo.create_storage_place(session=session, storage_place=storage_place_dto)
@@ -47,7 +51,9 @@ async def add_storage_place(storage_place_dto: StoragePlaceCreateUpdateSchema) -
     response_model=StoragePlaceSchema,
     status_code=status.HTTP_200_OK,
 )
-async def update_storage_place(place_id: int, storage_place_dto: StoragePlaceCreateUpdateSchema) -> StoragePlaceSchema:
+async def update_storage_place(place_id: int, storage_place_dto: StoragePlaceCreateUpdateSchema,
+                               current_user: UserSchema = Depends(get_current_user), ) -> StoragePlaceSchema:
+    check_for_admin_access(user=current_user)
     try:
         async with database.session() as session:
             updated_place = await storage_place_repo.update_storage_place(
@@ -61,7 +67,8 @@ async def update_storage_place(place_id: int, storage_place_dto: StoragePlaceCre
 
 
 @storage_place_router.delete("/delete_storage_place/{place_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_storage_place(place_id: int) -> None:
+async def delete_storage_place(place_id: int, current_user: UserSchema = Depends(get_current_user), ) -> None:
+    check_for_admin_access(user=current_user)
     try:
         async with database.session() as session:
             storageplace = await storage_place_repo.delete_storage_place(session=session, place_id=place_id)

@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 
-from project.api.depends import database, goodsgroup_repo
+from project.schemas.user import UserSchema
+
+from project.api.depends import database, goodsgroup_repo, get_current_user, check_for_admin_access
 from project.schemas.goodsgroup import *
 from project.core.exceptions import *
 
@@ -38,7 +40,9 @@ async def get_goods_group_by_id(
 @goodsgroup_router.post("/add_goodsgroup", response_model=GoodsGroupSchema, status_code=status.HTTP_201_CREATED)
 async def add_goods_group(
         goods_group_dto: GoodsGroupCreateUpdateSchema,
+        current_user: UserSchema = Depends(get_current_user),
 ) -> GoodsGroupSchema:
+    check_for_admin_access(user=current_user)
     try:
         async with database.session() as session:
             new_goods_group = await goodsgroup_repo.create_goods_group(session=session, goods_group=goods_group_dto)
@@ -55,7 +59,9 @@ async def add_goods_group(
 async def update_goods_group(
         goods_group_id: int,
         goods_group_dto: GoodsGroupCreateUpdateSchema,
+        current_user: UserSchema = Depends(get_current_user),
 ) -> GoodsGroupSchema:
+    check_for_admin_access(user=current_user)
     try:
         async with database.session() as session:
             updated_goods_group = await goodsgroup_repo.update_goods_group(
@@ -71,7 +77,9 @@ async def update_goods_group(
 @goodsgroup_router.delete("/delete_goodsgroup/{goods_group_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_goods_group(
         goods_group_id: int,
+        current_user: UserSchema = Depends(get_current_user),
 ) -> None:
+    check_for_admin_access(user=current_user)
     try:
         async with database.session() as session:
             goodsgroup = await goodsgroup_repo.delete_goods_group(session=session, goods_group_id=goods_group_id)

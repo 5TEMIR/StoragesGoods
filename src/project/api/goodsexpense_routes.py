@@ -1,5 +1,8 @@
-from fastapi import APIRouter, HTTPException, status
-from project.api.depends import database, goods_expense_repo
+from fastapi import APIRouter, HTTPException, status, Depends
+
+from project.schemas.user import UserSchema
+
+from project.api.depends import database, goods_expense_repo, get_current_user, check_for_admin_access
 from project.schemas.goodsexpense import GoodsExpenseSchema
 from project.core.exceptions import GoodsExpenseNotFound, GoodsExpenseAlreadyExists
 
@@ -22,7 +25,9 @@ async def get_goods_expenses_by_expense_id(expense_id: int) -> list[GoodsExpense
 
 
 @goods_expense_router.post("/add_goods_expense", response_model=GoodsExpenseSchema, status_code=status.HTTP_201_CREATED)
-async def add_goods_expense(expense_dto: GoodsExpenseSchema) -> GoodsExpenseSchema:
+async def add_goods_expense(expense_dto: GoodsExpenseSchema,
+                            current_user: UserSchema = Depends(get_current_user), ) -> GoodsExpenseSchema:
+    check_for_admin_access(user=current_user)
     try:
         async with database.session() as session:
             new_expense = await goods_expense_repo.create_goods_expense(session=session, expense=expense_dto)
@@ -33,7 +38,9 @@ async def add_goods_expense(expense_dto: GoodsExpenseSchema) -> GoodsExpenseSche
 
 @goods_expense_router.delete("/delete_goods_expense/{expense_id}/{storage_place_id}",
                              status_code=status.HTTP_204_NO_CONTENT)
-async def delete_goods_expense(expense_id: int, storage_place_id: int) -> None:
+async def delete_goods_expense(expense_id: int, storage_place_id: int,
+                               current_user: UserSchema = Depends(get_current_user), ) -> None:
+    check_for_admin_access(user=current_user)
     try:
         async with database.session() as session:
             goodsexpense = await goods_expense_repo.delete_goods_expense(session=session, expense_id=expense_id,

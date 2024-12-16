@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 
-from project.api.depends import database, receipt_repo
+from project.schemas.user import UserSchema
+
+from project.api.depends import database, receipt_repo, get_current_user, check_for_admin_access
 from project.schemas.receipt import *
 from project.core.exceptions import *
 
@@ -33,7 +35,9 @@ async def get_receipt_by_id(receipt_id: int) -> ReceiptSchema:
 
 
 @receipt_router.post("/add_receipt", response_model=ReceiptSchema, status_code=status.HTTP_201_CREATED)
-async def add_receipt(receipt_dto: ReceiptCreateUpdateSchema) -> ReceiptSchema:
+async def add_receipt(receipt_dto: ReceiptCreateUpdateSchema,
+                      current_user: UserSchema = Depends(get_current_user), ) -> ReceiptSchema:
+    check_for_admin_access(user=current_user)
     try:
         async with database.session() as session:
             new_receipt = await receipt_repo.create_receipt(session=session, receipt=receipt_dto)
@@ -47,7 +51,9 @@ async def add_receipt(receipt_dto: ReceiptCreateUpdateSchema) -> ReceiptSchema:
     response_model=ReceiptSchema,
     status_code=status.HTTP_200_OK,
 )
-async def update_receipt(receipt_id: int, receipt_dto: ReceiptCreateUpdateSchema) -> ReceiptSchema:
+async def update_receipt(receipt_id: int, receipt_dto: ReceiptCreateUpdateSchema,
+                         current_user: UserSchema = Depends(get_current_user), ) -> ReceiptSchema:
+    check_for_admin_access(user=current_user)
     try:
         async with database.session() as session:
             updated_receipt = await receipt_repo.update_receipt(
@@ -61,7 +67,8 @@ async def update_receipt(receipt_id: int, receipt_dto: ReceiptCreateUpdateSchema
 
 
 @receipt_router.delete("/delete_receipt/{receipt_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_receipt(receipt_id: int) -> None:
+async def delete_receipt(receipt_id: int, current_user: UserSchema = Depends(get_current_user), ) -> None:
+    check_for_admin_access(user=current_user)
     try:
         async with database.session() as session:
             receipt = await receipt_repo.delete_receipt(session=session, receipt_id=receipt_id)

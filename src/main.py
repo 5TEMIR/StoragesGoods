@@ -20,6 +20,10 @@ from project.api.goodstransfer_routes import goods_transfer_router
 from project.api.goodsreceipt_routes import goods_receipt_router
 from project.api.goodsexpense_routes import goods_expense_router
 
+from project.api.user_routes import user_router
+from project.api.auth_routes import auth_router
+from project.api.healthcheck import healthcheck_router
+
 logger = logging.getLogger(__name__)
 
 
@@ -55,6 +59,10 @@ def create_app() -> FastAPI:
     app.include_router(goods_transfer_router, tags=["GoodsTransfer"])
     app.include_router(goods_receipt_router, tags=["GoodsReceipt"])
     app.include_router(goods_expense_router, tags=["GoodsExpense"])
+
+    app.include_router(user_router, tags=["User"])
+    app.include_router(auth_router, tags=["Auth"])
+    app.include_router(healthcheck_router, tags=["Health check"])
 
     return app
 

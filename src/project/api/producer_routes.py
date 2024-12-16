@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 
-from project.api.depends import database, producer_repo
+from project.schemas.user import UserSchema
+
+from project.api.depends import database, producer_repo, get_current_user, check_for_admin_access
 from project.schemas.producer import *
 from project.core.exceptions import *
 
@@ -33,7 +35,9 @@ async def get_producer_by_id(producer_id: int) -> ProducerSchema:
 
 
 @producer_router.post("/add_producer", response_model=ProducerSchema, status_code=status.HTTP_201_CREATED)
-async def add_producer(producer_dto: ProducerCreateUpdateSchema) -> ProducerSchema:
+async def add_producer(producer_dto: ProducerCreateUpdateSchema,
+                       current_user: UserSchema = Depends(get_current_user), ) -> ProducerSchema:
+    check_for_admin_access(user=current_user)
     try:
         async with database.session() as session:
             new_producer = await producer_repo.create_producer(session=session, producer=producer_dto)
@@ -47,7 +51,9 @@ async def add_producer(producer_dto: ProducerCreateUpdateSchema) -> ProducerSche
     response_model=ProducerSchema,
     status_code=status.HTTP_200_OK,
 )
-async def update_producer(producer_id: int, producer_dto: ProducerCreateUpdateSchema) -> ProducerSchema:
+async def update_producer(producer_id: int, producer_dto: ProducerCreateUpdateSchema,
+                          current_user: UserSchema = Depends(get_current_user), ) -> ProducerSchema:
+    check_for_admin_access(user=current_user)
     try:
         async with database.session() as session:
             updated_producer = await producer_repo.update_producer(
@@ -61,7 +67,8 @@ async def update_producer(producer_id: int, producer_dto: ProducerCreateUpdateSc
 
 
 @producer_router.delete("/delete_producer/{producer_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_producer(producer_id: int) -> None:
+async def delete_producer(producer_id: int, current_user: UserSchema = Depends(get_current_user), ) -> None:
+    check_for_admin_access(user=current_user)
     try:
         async with database.session() as session:
             producer = await producer_repo.delete_producer(session=session, producer_id=producer_id)

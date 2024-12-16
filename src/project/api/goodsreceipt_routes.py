@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 
-from project.api.depends import database, goods_receipt_repo
+from project.schemas.user import UserSchema
+
+from project.api.depends import database, goods_receipt_repo, get_current_user, check_for_admin_access
 from project.schemas.goodsreceipt import *
 from project.core.exceptions import *
 
@@ -23,7 +25,9 @@ async def get_goods_receipts_by_receipt_id(receipt_id: int) -> list[GoodsReceipt
 
 
 @goods_receipt_router.post("/add_goods_receipt", response_model=GoodsReceiptSchema, status_code=status.HTTP_201_CREATED)
-async def add_goods_receipt(receipt_dto: GoodsReceiptSchema) -> GoodsReceiptSchema:
+async def add_goods_receipt(receipt_dto: GoodsReceiptSchema,
+                            current_user: UserSchema = Depends(get_current_user), ) -> GoodsReceiptSchema:
+    check_for_admin_access(user=current_user)
     try:
         async with database.session() as session:
             new_receipt = await goods_receipt_repo.create_goods_receipt(session=session, receipt=receipt_dto)
@@ -34,7 +38,9 @@ async def add_goods_receipt(receipt_dto: GoodsReceiptSchema) -> GoodsReceiptSche
 
 @goods_receipt_router.delete("/delete_goods_receipt/{receipt_id}/{storage_place_id}",
                              status_code=status.HTTP_204_NO_CONTENT)
-async def delete_goods_receipt(receipt_id: int, storage_place_id: int) -> None:
+async def delete_goods_receipt(receipt_id: int, storage_place_id: int,
+                               current_user: UserSchema = Depends(get_current_user), ) -> None:
+    check_for_admin_access(user=current_user)
     try:
         async with database.session() as session:
             goodsreceipt = await goods_receipt_repo.delete_goods_receipt(session=session, receipt_id=receipt_id,
