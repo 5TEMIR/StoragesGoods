@@ -41,7 +41,7 @@ async def add_storage_place(storage_place_dto: StoragePlaceCreateUpdateSchema,
     try:
         async with database.session() as session:
             new_place = await storage_place_repo.create_storage_place(session=session, storage_place=storage_place_dto)
-    except StoragePlaceAlreadyExists as error:
+    except ErrorFound as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error.message)
     return new_place
 

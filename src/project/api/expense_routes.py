@@ -41,7 +41,7 @@ async def add_expense(expense_dto: ExpenseCreateUpdateSchema,
     try:
         async with database.session() as session:
             new_expense = await expense_repo.create_expense(session=session, expense=expense_dto)
-    except ExpenseAlreadyExists as error:
+    except ErrorFound as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error.message)
     return new_expense
 
@@ -63,11 +63,13 @@ async def update_expense(expense_id: int, expense_dto: ExpenseCreateUpdateSchema
             )
     except ExpenseNotFound as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error.message)
+    except ErrorFound as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error.message)
     return updated_expense
 
 
 @expense_router.delete("/delete_expense/{expense_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_expense(expense_id: int, current_user: UserSchema = Depends(get_current_user),) -> None:
+async def delete_expense(expense_id: int, current_user: UserSchema = Depends(get_current_user), ) -> None:
     check_for_admin_access(user=current_user)
     try:
         async with database.session() as session:

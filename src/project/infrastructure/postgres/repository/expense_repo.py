@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from project.schemas.expense import ExpenseSchema, ExpenseCreateUpdateSchema
 from project.infrastructure.postgres.models import Expense
 
-from project.core.exceptions import ExpenseNotFound, ExpenseAlreadyExists
+from project.core.exceptions import ExpenseNotFound, ExpenseAlreadyExists, ErrorFound
 
 
 class ExpenseRepository:
@@ -30,15 +30,19 @@ class ExpenseRepository:
         try:
             created_expense = await session.scalar(query)
             await session.flush()
-        except IntegrityError:
-            raise ExpenseAlreadyExists(client_id=expense.client_id, expens_date=expense.expens_date)
+        except IntegrityError as error:
+            raise ErrorFound(err=repr(error))
         return ExpenseSchema.model_validate(obj=created_expense)
 
     async def update_expense(self, session: AsyncSession, expense_id: int,
                              expense: ExpenseCreateUpdateSchema) -> ExpenseSchema:
         query = update(self._collection).where(self._collection.id == expense_id).values(
             expense.model_dump()).returning(self._collection)
-        updated_expense = await session.scalar(query)
+        try:
+            updated_expense = await session.scalar(query)
+            await session.flush()
+        except IntegrityError as error:
+            raise ErrorFound(err=repr(error))
         if not updated_expense:
             raise ExpenseNotFound(_id=expense_id)
         return ExpenseSchema.model_validate(obj=updated_expense)

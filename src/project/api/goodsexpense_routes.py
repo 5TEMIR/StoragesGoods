@@ -4,7 +4,7 @@ from project.schemas.user import UserSchema
 
 from project.api.depends import database, goods_expense_repo, get_current_user, check_for_admin_access
 from project.schemas.goodsexpense import GoodsExpenseSchema
-from project.core.exceptions import GoodsExpenseNotFound, GoodsExpenseAlreadyExists
+from project.core.exceptions import GoodsExpenseNotFound, GoodsExpenseAlreadyExists, ErrorFound
 
 goods_expense_router = APIRouter()
 
@@ -31,7 +31,7 @@ async def add_goods_expense(expense_dto: GoodsExpenseSchema,
     try:
         async with database.session() as session:
             new_expense = await goods_expense_repo.create_goods_expense(session=session, expense=expense_dto)
-    except GoodsExpenseAlreadyExists as error:
+    except ErrorFound as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error.message)
     return new_expense
 

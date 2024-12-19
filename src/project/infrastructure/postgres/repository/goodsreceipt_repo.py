@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from project.schemas.goodsreceipt import *
 from project.infrastructure.postgres.models import GoodsReceipt
 
-from project.core.exceptions import GoodsReceiptNotFound, GoodsReceiptAlreadyExists
+from project.core.exceptions import GoodsReceiptNotFound, GoodsReceiptAlreadyExists, ErrorFound
 
 
 class GoodsReceiptRepository:
@@ -19,8 +19,8 @@ class GoodsReceiptRepository:
         try:
             created_receipt = await session.scalar(query)
             await session.flush()
-        except IntegrityError:
-            raise GoodsReceiptAlreadyExists(receipt_id=receipt.receipt_id, storage_place_id=receipt.storage_place_id)
+        except IntegrityError as error:
+            raise ErrorFound(err=repr(error))
         return GoodsReceiptSchema.model_validate(obj=created_receipt)
 
     async def delete_goods_receipt(self, session: AsyncSession, receipt_id: int, storage_place_id: int) -> None:

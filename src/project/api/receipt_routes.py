@@ -41,7 +41,7 @@ async def add_receipt(receipt_dto: ReceiptCreateUpdateSchema,
     try:
         async with database.session() as session:
             new_receipt = await receipt_repo.create_receipt(session=session, receipt=receipt_dto)
-    except ReceiptAlreadyExists as error:
+    except ErrorFound as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error.message)
     return new_receipt
 
@@ -63,6 +63,8 @@ async def update_receipt(receipt_id: int, receipt_dto: ReceiptCreateUpdateSchema
             )
     except ReceiptNotFound as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error.message)
+    except ErrorFound as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error.message)
     return updated_receipt
 
 

@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from project.schemas.storageplace import StoragePlaceSchema, StoragePlaceCreateUpdateSchema
 from project.infrastructure.postgres.models import StoragePlace
 
-from project.core.exceptions import StoragePlaceNotFound, StoragePlaceAlreadyExists
+from project.core.exceptions import StoragePlaceNotFound, StoragePlaceAlreadyExists, ErrorFound
 
 
 class StoragePlaceRepository:
@@ -31,15 +31,19 @@ class StoragePlaceRepository:
         try:
             created_place = await session.scalar(query)
             await session.flush()
-        except IntegrityError:
-            raise StoragePlaceAlreadyExists(good_id=storage_place.good_id, storage_id=storage_place.storage_id)
+        except IntegrityError as error:
+            raise ErrorFound(err=repr(error))
         return StoragePlaceSchema.model_validate(obj=created_place)
 
     async def update_storage_place(self, session: AsyncSession, place_id: int,
                                    storage_place: StoragePlaceCreateUpdateSchema) -> StoragePlaceSchema:
         query = update(self._collection).where(self._collection.id == place_id).values(
             storage_place.model_dump()).returning(self._collection)
-        updated_place = await session.scalar(query)
+        try:
+            updated_place = await session.scalar(query)
+            await session.flush()
+        except IntegrityError as error:
+            raise ErrorFound(err=repr(error))
         if not updated_place:
             raise StoragePlaceNotFound(_id=place_id)
         return StoragePlaceSchema.model_validate(obj=updated_place)

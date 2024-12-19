@@ -7,7 +7,8 @@ from sqlalchemy.exc import IntegrityError
 from project.schemas.goodsexpense import GoodsExpenseSchema
 from project.infrastructure.postgres.models import GoodsExpense
 
-from project.core.exceptions import GoodsExpenseNotFound, GoodsExpenseAlreadyExists
+from project.core.exceptions import GoodsExpenseNotFound, GoodsExpenseAlreadyExists, ErrorFound
+
 
 class GoodsExpenseRepository:
     _collection: Type[GoodsExpense] = GoodsExpense
@@ -18,8 +19,8 @@ class GoodsExpenseRepository:
         try:
             created_expense = await session.scalar(query)
             await session.flush()
-        except IntegrityError:
-            raise GoodsExpenseAlreadyExists(expense_id=expense.expense_id, storage_place_id=expense.storage_place_id)
+        except IntegrityError as error:
+            raise ErrorFound(err=repr(error))
         return GoodsExpenseSchema.model_validate(obj=created_expense)
 
     async def delete_goods_expense(self, session: AsyncSession, expense_id: int, storage_place_id: int) -> None:

@@ -267,3 +267,11 @@ class CredentialsException(HTTPException):
             detail=detail,
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+class ErrorFound(BaseException):
+    message: str
+
+    def __init__(self, err: str) -> None:
+        self.message = err
+        super().__init__(self.message)

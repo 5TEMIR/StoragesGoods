@@ -31,7 +31,7 @@ async def add_goods_receipt(receipt_dto: GoodsReceiptSchema,
     try:
         async with database.session() as session:
             new_receipt = await goods_receipt_repo.create_goods_receipt(session=session, receipt=receipt_dto)
-    except GoodsReceiptAlreadyExists as error:
+    except ErrorFound as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error.message)
     return new_receipt
 

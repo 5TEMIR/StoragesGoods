@@ -42,7 +42,7 @@ async def add_goods_transfer(transfer_dto: GoodsTransferCreateUpdateSchema,
     try:
         async with database.session() as session:
             new_transfer = await goods_transfer_repo.create_goods_transfer(session=session, transfer=transfer_dto)
-    except GoodsTransferAlreadyExists as error:
+    except ErrorFound as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error.message)
     return new_transfer
 
@@ -64,6 +64,8 @@ async def update_goods_transfer(transfer_id: int, transfer_dto: GoodsTransferCre
             )
     except GoodsTransferNotFound as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error.message)
+    except ErrorFound as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error.message)
     return updated_transfer
 
 

@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from project.schemas.receipt import ReceiptSchema, ReceiptCreateUpdateSchema
 from project.infrastructure.postgres.models import Receipt
 
-from project.core.exceptions import ReceiptNotFound, ReceiptAlreadyExists
+from project.core.exceptions import ReceiptNotFound, ReceiptAlreadyExists, ErrorFound
 
 
 class ReceiptRepository:
@@ -30,15 +30,19 @@ class ReceiptRepository:
         try:
             created_receipt = await session.scalar(query)
             await session.flush()
-        except IntegrityError:
-            raise ReceiptAlreadyExists(receipt_date=receipt.receip_date, supplier_id=receipt.supplier_id)
+        except IntegrityError as error:
+            raise ErrorFound(err=repr(error))
         return ReceiptSchema.model_validate(obj=created_receipt)
 
     async def update_receipt(self, session: AsyncSession, receipt_id: int,
                              receipt: ReceiptCreateUpdateSchema) -> ReceiptSchema:
         query = update(self._collection).where(self._collection.id == receipt_id).values(
             receipt.model_dump()).returning(self._collection)
-        updated_receipt = await session.scalar(query)
+        try:
+            updated_receipt = await session.scalar(query)
+            await session.flush()
+        except IntegrityError as error:
+            raise ErrorFound(err=repr(error))
         if not updated_receipt:
             raise ReceiptNotFound(_id=receipt_id)
         return ReceiptSchema.model_validate(obj=updated_receipt)

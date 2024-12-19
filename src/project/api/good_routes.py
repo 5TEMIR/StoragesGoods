@@ -40,7 +40,7 @@ async def add_good(good_dto: GoodCreateUpdateSchema, current_user: UserSchema = 
     try:
         async with database.session() as session:
             new_good = await good_repo.create_good(session=session, good=good_dto)
-    except GoodAlreadyExists as error:
+    except ErrorFound as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error.message)
     return new_good
 
@@ -61,6 +61,8 @@ async def update_good(good_id: int, good_dto: GoodCreateUpdateSchema, current_us
             )
     except GoodNotFound as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error.message)
+    except ErrorFound as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error.message)
     return updated_good
 
 

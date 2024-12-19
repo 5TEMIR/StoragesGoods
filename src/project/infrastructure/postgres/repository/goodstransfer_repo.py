@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from project.schemas.goodstransfer import GoodsTransferSchema, GoodsTransferCreateUpdateSchema
 from project.infrastructure.postgres.models import GoodsTransfer
 
-from project.core.exceptions import GoodsTransferNotFound, GoodsTransferAlreadyExists
+from project.core.exceptions import GoodsTransferNotFound, GoodsTransferAlreadyExists, ErrorFound
 
 
 class GoodsTransferRepository:
@@ -31,16 +31,19 @@ class GoodsTransferRepository:
         try:
             created_transfer = await session.scalar(query)
             await session.flush()
-        except IntegrityError:
-            raise GoodsTransferAlreadyExists(quantity=transfer.quantity, transfer_date=transfer.transfer_date,
-                                             good_id=transfer.good_id)
+        except IntegrityError as error:
+            raise ErrorFound(err=repr(error))
         return GoodsTransferSchema.model_validate(obj=created_transfer)
 
     async def update_goods_transfer(self, session: AsyncSession, transfer_id: int,
                                     transfer: GoodsTransferCreateUpdateSchema) -> GoodsTransferSchema:
         query = update(self._collection).where(self._collection.id == transfer_id).values(
             transfer.model_dump()).returning(self._collection)
-        updated_transfer = await session.scalar(query)
+        try:
+            updated_transfer = await session.scalar(query)
+            await session.flush()
+        except IntegrityError as error:
+            raise ErrorFound(err=repr(error))
         if not updated_transfer:
             raise GoodsTransferNotFound(_id=transfer_id)
         return GoodsTransferSchema.model_validate(obj=updated_transfer)

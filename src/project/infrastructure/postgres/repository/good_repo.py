@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from project.schemas.good import GoodSchema, GoodCreateUpdateSchema
 from project.infrastructure.postgres.models import Good
 
-from project.core.exceptions import GoodNotFound, GoodAlreadyExists
+from project.core.exceptions import GoodNotFound, ErrorFound
 
 
 class GoodRepository:
@@ -30,14 +30,18 @@ class GoodRepository:
         try:
             created_good = await session.scalar(query)
             await session.flush()
-        except IntegrityError:
-            raise GoodAlreadyExists(name=good.name)
+        except IntegrityError as error:
+            raise ErrorFound(err=repr(error))
         return GoodSchema.model_validate(obj=created_good)
 
     async def update_good(self, session: AsyncSession, good_id: int, good: GoodCreateUpdateSchema) -> GoodSchema:
         query = update(self._collection).where(self._collection.id == good_id).values(good.model_dump()).returning(
             self._collection)
-        updated_good = await session.scalar(query)
+        try:
+            updated_good = await session.scalar(query)
+            await session.flush()
+        except IntegrityError as error:
+            raise ErrorFound(err=repr(error))
         if not updated_good:
             raise GoodNotFound(_id=good_id)
         return GoodSchema.model_validate(obj=updated_good)
